@@ -1,38 +1,47 @@
 'reach 0.1';
 
+/**
+ * This document has had its logic simplified significantly so as to get a "working product."
+ * This was done because there was limited time in the Monash hackathon, and an error with
+ * Reach compilation.
+ * 
+ * There is a hard-coded maximum of 3 nodes.
+ * There is no support for future multiple transitions (locked linearly).
+ * 
+ * If you would like to see what a proper implementation is like, please switch to the main
+ * branch. Do be warned, at the time of writing the Reach compiler encounters an issue, which
+ * is sure to be fixed in an upcoming update.
+ */
+
 //#region Constants and Definitions
 
-const GRAPH_SIZE = 5;
+const GRAPH_SIZE = 3;
 
 const [isTransition, RELOCATION, PURCHASE, PROCESSING ] = makeEnum(3);
 const [isUnit, UNITS, KILOGRAMS, TONNES ] = makeEnum(3);
 
-const [isState, PRODUCTION, STORAGE ] = makeEnum(2);
+const [isState, PRODUCTION, STORAGE, USAGE ] = makeEnum(3);
 const [isSupply, LUMBER, CONCRETE, STEEL] = makeEnum(3);
 
 const TransactorInterface = {
   // Returns all the data in the graph
   viewData: Fun([
     Object({ 
-      transitionsLength: UInt, 
+      chainState: UInt,
+
       transitions: Array(Object({
         transitionName: UInt, // isTransition
         inventoryUnit: UInt,  // isUnit
         inventoryValue: UInt,
         date: UInt,
-        originTransition: UInt,
-        endpoint: UInt,
-      }), GRAPH_SIZE),
+      }), GRAPH_SIZE - 1),
       
-      statesLength: UInt,
       states: Array(Object({
         supplyName: UInt,     // isSupply
         stateName: UInt,      // isTransition
         inventoryUnit: UInt,  // isUnit
         inventoryValue: UInt,
         date: UInt,
-        transitionsLength: UInt,
-        transitions: Array(UInt, GRAPH_SIZE),
       }), GRAPH_SIZE),
     })], 
 
@@ -41,11 +50,9 @@ const TransactorInterface = {
   ),
 
   // Adds to the graph
-  /*
   createTransaction: Fun(
     [], 
     Object({ 
-      origin: UInt,
       transition: Object({
         transitionName: UInt, // isTransition
         inventoryUnit: UInt,  // isUnit
@@ -54,15 +61,13 @@ const TransactorInterface = {
       }),
       state: Object({
         supplyName: UInt,     // isSupply
-        //stateName: UInt,      // isTransition
-        //inventoryUnit: UInt,  // isUnit
-        //inventoryValue: UInt,
-        //date: UInt,
-        //transitions: Array(UInt, GRAPH_SIZE),
+        stateName: UInt,      // isTransition
+        inventoryUnit: UInt,  // isUnit
+        inventoryValue: UInt,
+        date: UInt,
       })
     })
   ),
-  */
 
   // starts the chain
   createChain: Object({
@@ -75,11 +80,6 @@ const TransactorInterface = {
 
   // logging function
   log: Fun(true, Null),
-};
-
-// a null interface of the transition object
-const NullTransition = {
-  dope: 0
 };
 
 //#endregion
@@ -95,59 +95,117 @@ export const main = Reach.App(() => {
     const _initNodeResponse = interact.createChain;
     const initNode = {
       supplyName: _initNodeResponse.supplyName,
-      //stateName: _initNodeResponse.stateName,    
-      //inventoryUnit: _initNodeResponse.inventoryUnit,
-      //inventoryValue: _initNodeResponse.inventoryValue,
-      //date: _initNodeResponse.date,
-      //transitionsLength: 0,
-      //transitions: Array.replicate(GRAPH_SIZE, 0),
+      stateName: _initNodeResponse.stateName,    
+      inventoryUnit: _initNodeResponse.inventoryUnit,
+      inventoryValue: _initNodeResponse.inventoryValue,
+      date: _initNodeResponse.date,
     };
   });
   A.publish(initNode);
 
   //#endregion
 
-  //#region Infinite Chain Loop
+  
+  //#region Linear Supply Chain
 
-  // short for "Chain State"
-  var cs = {
-    transitionsLength: 0,
-    transitions: array(Object({ dope: UInt }), [ NullTransition, NullTransition, NullTransition, NullTransition, NullTransition ] ), // Array.replicate(GRAPH_SIZE, NullTransition),
-    statesLength: 1,
-    states: 4//Array.replicate(GRAPH_SIZE, initNode)
+  /**
+   * NOTE:
+   * The infinite chain loop has been removed in this branch, because there is no point if there
+   * is no easy extension of the graph size. The graph size is now 3, and will remain 3.
+   */ 
+
+  const cs1 = {
+    chainState: 0,
+    transitions: array(Object({ transitionName: UInt, inventoryUnit: UInt, inventoryValue: UInt, date: UInt }), [ 
+      {
+        transitionName: 0, // isTransition
+        inventoryUnit: 0,  // isUnit
+        inventoryValue: 0,
+        date: 0,
+      },
+      {
+        transitionName: 0, // isTransition
+        inventoryUnit: 0,  // isUnit
+        inventoryValue: 0,
+        date: 0,
+      },
+    ]),
+    states: array(Object({ supplyName: UInt, stateName: UInt, inventoryUnit: UInt, inventoryValue: UInt, date: UInt }), [
+      initNode,
+      {
+        supplyName: 0,     // isSupply
+        stateName: 0,      // isTransition
+        inventoryUnit: 0,  // isUnit
+        inventoryValue: 0,
+        date: 0,
+      },
+      {
+        supplyName: 0,     // isSupply
+        stateName: 0,      // isTransition
+        inventoryUnit: 0,  // isUnit
+        inventoryValue: 0,
+        date: 0,
+      }
+    ])
   };
 
-  invariant(
-    cs.transitionsLength >= 0 && 
-    cs.transitions.length == GRAPH_SIZE &&
-    cs.statesLength >= 1 &&
-    //cs.states.length == GRAPH_SIZE &&
-    cs.transitionsLength < cs.statesLength
-  );
-
-  // The chain stays as long as there aren't too many states.
-  while(cs.statesLength < 100) {
-    commit();
-
-    A.only(() => {
-      const bro = 4;
-    });
-    A.publish(bro);
-
-    const newCS = {
-      transitionsLength: bro,
-      transitions: cs.transitions,
-      statesLength: bro,
-      states: cs.states
-    };
-    cs = newCS;
-    continue;
-  }
-
-  transfer(balance()).to(A);
+  A.only(() => {
+    interact.viewData(cs1);
+    const transReq1 = declassify(interact.createTransaction());
+  });
   commit();
+
+  A.publish(transReq1);
+  const cs2 = {
+    chainState: 1,
+    transitions: array(Object({ transitionName: UInt, inventoryUnit: UInt, inventoryValue: UInt, date: UInt }), [ 
+      transReq1.transition,
+      {
+        transitionName: 0, // isTransition
+        inventoryUnit: 0,  // isUnit
+        inventoryValue: 0,
+        date: 0,
+      },
+    ]),
+    states: array(Object({ supplyName: UInt, stateName: UInt, inventoryUnit: UInt, inventoryValue: UInt, date: UInt }), [
+      initNode,
+      transReq1.state,
+      {
+        supplyName: 0,     // isSupply
+        stateName: 0,      // isTransition
+        inventoryUnit: 0,  // isUnit
+        inventoryValue: 0,
+        date: 0,
+      }
+    ])
+  };
+
+  A.only(() => {
+    interact.viewData(cs2);
+    const transReq2 = declassify(interact.createTransaction());
+  });
+  commit();
+
+  A.publish(transReq2);
+  const cs3 = {
+    chainState: 2,
+    transitions: array(Object({ transitionName: UInt, inventoryUnit: UInt, inventoryValue: UInt, date: UInt }), [ 
+      transReq1.transition,
+      transReq2.transition,
+    ]),
+    states: array(Object({ supplyName: UInt, stateName: UInt, inventoryUnit: UInt, inventoryValue: UInt, date: UInt }), [
+      initNode,
+      transReq1.state,
+      transReq2.state
+    ])
+  };
+
+  A.only(() => {
+    interact.viewData(cs3);
+  })
 
   //#endregion
 
+  commit();
   exit();
 });
