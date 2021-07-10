@@ -2,7 +2,7 @@
 
 //#region Constants and Definitions
 
-const GRAPH_SIZE = 10;
+const GRAPH_SIZE = 5;
 
 const [isTransition, RELOCATION, PURCHASE, PROCESSING ] = makeEnum(3);
 const [isUnit, UNITS, KILOGRAMS, TONNES ] = makeEnum(3);
@@ -41,6 +41,7 @@ const TransactorInterface = {
   ),
 
   // Adds to the graph
+  /*
   createTransaction: Fun(
     [], 
     Object({ 
@@ -53,14 +54,15 @@ const TransactorInterface = {
       }),
       state: Object({
         supplyName: UInt,     // isSupply
-        stateName: UInt,      // isTransition
-        inventoryUnit: UInt,  // isUnit
-        inventoryValue: UInt,
-        date: UInt,
-        transitions: Array(UInt, GRAPH_SIZE),
+        //stateName: UInt,      // isTransition
+        //inventoryUnit: UInt,  // isUnit
+        //inventoryValue: UInt,
+        //date: UInt,
+        //transitions: Array(UInt, GRAPH_SIZE),
       })
     })
   ),
+  */
 
   // starts the chain
   createChain: Object({
@@ -93,12 +95,12 @@ export const main = Reach.App(() => {
     const _initNodeResponse = interact.createChain;
     const initNode = {
       supplyName: _initNodeResponse.supplyName,
-      stateName: _initNodeResponse.stateName,    
-      inventoryUnit: _initNodeResponse.inventoryUnit,
-      inventoryValue: _initNodeResponse.inventoryValue,
-      date: _initNodeResponse.date,
-      transitionsLength: 0,
-      transitions: Array.replicate(GRAPH_SIZE, 0),
+      //stateName: _initNodeResponse.stateName,    
+      //inventoryUnit: _initNodeResponse.inventoryUnit,
+      //inventoryValue: _initNodeResponse.inventoryValue,
+      //date: _initNodeResponse.date,
+      //transitionsLength: 0,
+      //transitions: Array.replicate(GRAPH_SIZE, 0),
     };
   });
   A.publish(initNode);
@@ -110,16 +112,16 @@ export const main = Reach.App(() => {
   // short for "Chain State"
   var cs = {
     transitionsLength: 0,
-    transitions: Array.replicate(GRAPH_SIZE, NullTransition),
+    transitions: array(Object({ dope: UInt }), [ NullTransition, NullTransition, NullTransition, NullTransition, NullTransition ] ), // Array.replicate(GRAPH_SIZE, NullTransition),
     statesLength: 1,
-    states: Array.replicate(GRAPH_SIZE, initNode)
+    states: 4//Array.replicate(GRAPH_SIZE, initNode)
   };
 
   invariant(
     cs.transitionsLength >= 0 && 
     cs.transitions.length == GRAPH_SIZE &&
     cs.statesLength >= 1 &&
-    cs.states.length == GRAPH_SIZE &&
+    //cs.states.length == GRAPH_SIZE &&
     cs.transitionsLength < cs.statesLength
   );
 
