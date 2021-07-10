@@ -4,9 +4,14 @@ import './index.css';
 import * as backend from './build/index.main.mjs';
 import * as reach from '@reach-sh/stdlib/ETH';
 import {
-  AppBar, Button, Card, CardContent, CardHeader,
-  Grid, Select, TextField, Typography, MenuItem, InputLabel, FormControl
+  AppBar, Button, Card, CardContent, FormControl, Grid,
+  MenuItem, Select, TextField, Typography,
 } from '@material-ui/core';
+import {
+  Timeline, TimelineItem, TimelineOppositeContent,
+  TimelineSeparator, TimelineDot, TimelineConnector,
+  TimelineContent
+} from '@material-ui/lab';
 import { makeStyles } from '@material-ui/styles';
 
 const { standardUnit, bigNumberToNumber, isBigNumber } = reach;
@@ -67,6 +72,7 @@ class Transactor extends React.Component {
     // props exist here
     console.log("Constructor props:", props);
     super(props);
+    this.setState({ transactionRequested: false });
   }
 
   random() { return reach.hasRandom.random(); }
@@ -89,23 +95,14 @@ class Transactor extends React.Component {
 
   async createTransaction() {
     const delay = ms => new Promise(res => setTimeout(res, ms));
-    await delay(5000);
+    await delay(2000);
 
-    return {
-      transition: {
-        transitionName: 0, // isTransition
-        inventoryUnit: 0,  // isUnit
-        inventoryValue: 0,
-        date: 0,
-      },
-      state: {
-        supplyName: 0,
-        stateName: 0,
-        inventoryUnit: 0,
-        inventoryValue: 0,
-        date: 0,
-      }
-    }
+    const transactionReq = await new Promise(resolveTransactionReq => {
+      this.setState({ transactionRequested: true, resolveTransactionReq });
+    });
+
+    this.setState({ transactionRequested: false });
+    return transactionReq;
   }
 
   setCreateChain(supplyName, stateName, inventoryUnit, inventoryValue) {
@@ -117,17 +114,6 @@ class Transactor extends React.Component {
       inventoryValue: inventoryValue,
       date: 0,
     };
-  }
-
-
-
-  // example of user interaction
-  async getHand() { // Fun([], UInt)
-    const hand = await new Promise(resolveHandP => {
-      this.setState({ view: 'GetHand', playable: true, resolveHandP });
-    });
-    this.setState({ view: 'WaitingForResults', hand });
-    return hand;
   }
 
   render() {
@@ -165,17 +151,49 @@ let AppView = props => {
   const classes = useStyles();
   const chainState = bigNumParse(props.state?.chainState);
 
-  // states
-  const supplyNameD = bigNumParse(props.state?.states?.[0].supplyName);
-  const stateNameD = bigNumParse(props.state?.states?.[0].stateName);
-  const inventoryUnitD = bigNumParse(props.state?.states?.[0].inventoryUnit);
-  const inventoryValueD = bigNumParse(props.state?.states?.[0].inventoryValue);
+  // request interaction
+  const transactionRequested = props.transactionRequested;
 
+  // form
   const [supplyName, setSupplyName] = useState(0);
   const [stateName, setStateName] = useState(0);
   const [inventoryUnit, setInventoryUnit] = useState(0);
   const [inventoryValue, setInventoryValue] = useState(0);
-  const date = 0;
+
+  const [transitionName, setTransitionName] = useState(0);
+  const [transitionInvUnit, setTransitionInvUnit] = useState(0);
+  const [transitionInvValue, setTransitionInvValue] = useState(0);
+
+  const [deployed, setDeployed] = useState(false);
+
+  let timelineCards = [];
+  for (let i = 0; i <= chainState; i++) {
+    timelineCards[i] = (
+      <TimelineItem key={i}>
+        <TimelineOppositeContent>
+          {i == 0 ? <></> :
+            <>
+              <Typography>Transition: {intToTransition[bigNumParse(props.state?.transitions?.[i-1].transitionName)]}</Typography>
+              <Typography>
+                Inventory: {bigNumParse(props.state?.transitions?.[i-1].inventoryValue)} {intToUnits[bigNumParse(props.state?.transitions?.[i-1].inventoryUnit)]}
+              </Typography>
+            </>
+          }
+        </TimelineOppositeContent>
+        <TimelineSeparator>
+          <TimelineDot />
+          <TimelineConnector />
+        </TimelineSeparator>
+        <TimelineContent>
+          <Typography>Supply: {intToSupply[bigNumParse(props.state?.states?.[i].supplyName)]}</Typography>
+          <Typography>State: {intToState[bigNumParse(props.state?.states?.[i].stateName)]}</Typography>
+          <Typography>
+            Inventory: {bigNumParse(props.state?.states?.[i].inventoryValue)} {intToUnits[bigNumParse(props.state?.states?.[i].inventoryUnit)]}
+          </Typography>
+        </TimelineContent>
+      </TimelineItem>
+    );
+  }
 
   return (
     <>
@@ -215,24 +233,76 @@ let AppView = props => {
               </FormControl>
               <div class={classes.mt1} />
               <TextField label="Value" value={inventoryValue} onChange={e => setInventoryValue(e.target.value)} />
-              <Button
-                onClick={() => {
-                  props.setCreateChain(supplyName, stateName, inventoryUnit, inventoryValue);
-                  props.deploy();
-                }}>
-                Create
-              </Button>
+              {deployed ? <></> :
+                <Button
+                  onClick={() => {
+                    props.setCreateChain(supplyName, stateName, inventoryUnit, inventoryValue);
+                    props.deploy();
+                    setDeployed(true);
+                  }}>
+                  Create
+                </Button>
+              }
+              {!transactionRequested ? <></> :
+                <>
+                  <Typography variant="h6" className={classes.centered} style={{ marginTop: "36px", marginBottom: "8px" }}>
+                    Create Transition
+                  </Typography>
+                  <FormControl style={{ width: "100%" }}>
+                    <div>Transition Name</div>
+                    <Select value={transitionName} onChange={e => setTransitionName(e.target.value)}>
+                      <MenuItem value={0}>Relocation</MenuItem>
+                      <MenuItem value={1}>Purchase</MenuItem>
+                      <MenuItem value={2}>Processing</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <FormControl style={{ width: "100%" }}>
+                    <div class={classes.mt1}>Inventory Unit</div>
+                    <Select value={transitionInvUnit} onChange={e => setTransitionInvUnit(e.target.value)}>
+                      <MenuItem value={0}>Units</MenuItem>
+                      <MenuItem value={1}>Kilograms</MenuItem>
+                      <MenuItem value={2}>Tons</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <div class={classes.mt1} />
+                  <TextField label="Inventory Value" value={transitionInvValue} onChange={e => setTransitionInvValue(e.target.value)} />
+                  <Button
+                    onClick={() => {
+                      props.resolveTransactionReq({
+                        transition: {
+                          transitionName: transitionName, // isTransition
+                          inventoryUnit: transitionInvUnit,  // isUnit
+                          inventoryValue: transitionInvValue,
+                          date: 0,
+                        },
+                        state: {
+                          supplyName: supplyName,
+                          stateName: stateName,
+                          inventoryUnit: inventoryUnit,
+                          inventoryValue: inventoryValue,
+                          date: 0,
+                        }
+                      });
+                    }}>
+                    Create
+                  </Button>
+                </>
+              }
             </CardContent>
           </Card>
         </Grid>
+
         <Grid item xs={12} sm={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" className={classes.centered}>Chain Data:</Typography>
-              <Typography>Supply Name: {supplyNameD}</Typography>
-              <Typography>State Name: {stateNameD}</Typography>
-              <Typography>Inventory Unit: {inventoryUnitD}</Typography>
-              <Typography>Inventory Value: {inventoryValueD}</Typography>
+              {!deployed ? <></> :
+                <>
+                  <Timeline>
+                    {timelineCards}
+                  </Timeline>
+                </>
+              }
             </CardContent>
           </Card>
         </Grid>
