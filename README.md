@@ -3,8 +3,8 @@ A simple supply chain made in reach for the Monash hackathon.
 
 ## Usage
 To run the program, you must have the installation requirements of Reach. Please learn more about reach dependencies [here](https://docs.reach.sh/tut-1.html).  
-Once you have the installation requirements of Reach, run `./reach react`. This will run the program on your local device. Please be careful about which network
-you work on.
+Once you have the installation requirements of Reach, run `./reach react`. The program is currently configured to work on the Algorand TestNet, and only with  
+Algosigner. Please install Algosigner and create a TestNet wallet if you haven't already.
 
 ## Branches
 There are two branches in this project, main and compiler-issue-workaround.  

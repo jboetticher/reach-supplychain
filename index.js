@@ -2,7 +2,7 @@ import ReactDOM from 'react-dom';
 import React, { useState } from 'react';
 import './index.css';
 import * as backend from './build/index.main.mjs';
-import * as reach from '@reach-sh/stdlib/ETH';
+import * as reach from '@reach-sh/stdlib/ALGO';
 import {
   AppBar, Button, Card, CardContent, FormControl, Grid,
   MenuItem, Select, TextField, Typography,
@@ -13,6 +13,9 @@ import {
   TimelineContent
 } from '@material-ui/lab';
 import { makeStyles } from '@material-ui/styles';
+
+reach.setSignStrategy('AlgoSigner');
+reach.setProviderByName('TestNet');
 
 const { standardUnit, bigNumberToNumber, isBigNumber } = reach;
 const bigNumParse = (val) => isBigNumber(val) ? bigNumberToNumber(val) : 0;
@@ -62,7 +65,7 @@ class App extends React.Component {
 
 
   render() {
-    return <Transactor {...this.state} damn={"damn"} />;
+    return <Transactor {...this.state} />;
   }
 }
 
