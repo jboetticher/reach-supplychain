@@ -9,10 +9,9 @@ import * as backend from './build/index.main.mjs';
 
   const ctcAlice = alice.deploy(backend);
 
-  let chainIndex = 0;
+  let chainIndex = 1;
   let additionalNodes = [
     {
-      origin: 0,
       transition: {
         transitionName: 0,
         inventoryUnit: 1,
@@ -28,7 +27,6 @@ import * as backend from './build/index.main.mjs';
       }
     },
     {
-      origin: 1,
       transition: {
         transitionName: 1,
         inventoryUnit: 1,
@@ -44,7 +42,6 @@ import * as backend from './build/index.main.mjs';
       }
     },
     {
-      origin: 2,
       transition: {
         transitionName: 0,
         inventoryUnit: 1,
@@ -65,9 +62,24 @@ import * as backend from './build/index.main.mjs';
     backend.Alice(ctcAlice, {
       ...stdlib.hasRandom,
 
+      createChain: additionalNodes[0].state,
+      createTransaction: function() {
+        let index = additionalNodes[chainIndex];
+        chainIndex += 1;
+        return index;
+      },
+      viewData: function(data) {
+        let cIndx = data.chainState;
 
+        console.log(`Chain State: ${cIndx}`);
+        console.log("*** State: ***");
+        console.log(`Supply: ${data.states[cIndx].supplyName}, State: ${data.states[cIndx].stateName}`); 
+        console.log(`Inventory Unit: ${data.states[cIndx].inventoryUnit}, Inventory Value: ${data.states[cIndx].inventoryValue}`);
+        console.log(`Date: ${data.states[cIndx].date}`);
+        console.log("-------------------------------------------------------");
+      }
     }),
   ]);
 
-  console.log('Hello, Alice and Bob!');
+  console.log('Supply chain ended.');
 })();
