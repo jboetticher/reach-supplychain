@@ -9,8 +9,9 @@
  * There is no support for future multiple transitions (locked linearly).
  * 
  * If you would like to see what a proper implementation is like, please switch to the main
- * branch. Do be warned, at the time of writing the Reach compiler encounters an issue, which
- * is sure to be fixed in an upcoming update.
+ * branch. Do be warned, at the time of writing the Reach compiler I'm using encounters an issue, 
+ * which is sure to be fixed in a different version of Reach. However, for the sake of time, this
+ * branch was made.
  */
 
 //#region Constants and Definitions

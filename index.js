@@ -4,19 +4,20 @@ import './index.css';
 import * as backend from './build/index.main.mjs';
 import * as reach from '@reach-sh/stdlib/ETH';
 
-const intToTransition = [ "Relocation", "Purchase", "Processing" ];
-const intToUnits = [ "Units", "Kg", "Tons" ];
-const intToState = [ "Production", "Storage", "Usage" ];
-const intToSupply = [ "Lumber", "Concrete", "Steel" ];
+const intToTransition = ["Relocation", "Purchase", "Processing"];
+const intToUnits = ["Units", "Kg", "Tons"];
+const intToState = ["Production", "Storage", "Usage"];
+const intToSupply = ["Lumber", "Concrete", "Steel"];
 
-const {standardUnit} = reach;
-const defaults = {defaultFundAmt: '10', defaultWager: '3', standardUnit};
+const { standardUnit, bigNumberToNumber, isBigNumber } = reach;
+const bigNumParse = (val) => isBigNumber(val) ? bigNumberToNumber(val) : 0;
+const defaults = { defaultFundAmt: '10', defaultWager: '3', standardUnit };
 
 // Root App
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {view: 'ConnectAccount', ...defaults};
+    this.state = { ...defaults };
   }
 
   async componentDidMount() {
@@ -24,7 +25,7 @@ class App extends React.Component {
     const acc = await reach.getDefaultAccount();
     const balAtomic = await reach.balanceOf(acc);
     const bal = reach.formatCurrency(balAtomic, 4);
-    this.setState({acc, bal});
+    this.setState({ acc, bal });
 
     // Removed faucet functionality. Unnecessary for quick implementation
     /*
@@ -35,7 +36,7 @@ class App extends React.Component {
       this.setState({view: 'DeployerOrAttacher'});
     }
     */
-    console.log("Component mounted.");
+    console.log("Component mounted.", this.state);
   }
 
   // Removed faucet functionality.
@@ -48,18 +49,43 @@ class App extends React.Component {
   */
 
 
-  render() { 
-    return <Transactor props={this.state} />; 
+  render() {
+    return <Transactor {...this.state} damn={"damn"} />;
   }
 }
 
 // Definition of the Transactor participant
 class Transactor extends React.Component {
+  constructor(props) {
+    // props exist here
+    console.log("Constructor props:", props);
+    super(props);
+  }
+
   random() { return reach.hasRandom.random(); }
 
+  async deploy() {
+    // props don't exist here
+    const ctc = this.props.acc.deploy(backend);
+
+    // where to define the original create chain
+    this.createChain = {
+      supplyName: 0,
+      stateName: 0,
+      inventoryUnit: 0,
+      inventoryValue: 0,
+      date: 0,
+    };
+    backend.Alice(ctc, this);
+    console.log("Alice deployment complete.");
+
+    const ctcInfoStr = JSON.stringify(await ctc.getInfo(), null, 2);
+    console.log("Connection String: ", ctcInfoStr);
+  }
+
   viewData(data) {
-      console.log(data);
-      this.setState({ chainState: data });
+    console.log(data);
+    this.setState({ state: data });
   }
 
   async createTransaction() {
@@ -83,30 +109,25 @@ class Transactor extends React.Component {
     }
   }
 
-  createChain() {
-    return {
-      supplyName: 0,
-      stateName: 0,
-      inventoryUnit: 0,
-      inventoryValue: 0,
-      date: 0,
-    }
-  }
 
 
   // example of user interaction
   async getHand() { // Fun([], UInt)
     const hand = await new Promise(resolveHandP => {
-      this.setState({view: 'GetHand', playable: true, resolveHandP});
+      this.setState({ view: 'GetHand', playable: true, resolveHandP });
     });
-    this.setState({view: 'WaitingForResults', hand});
+    this.setState({ view: 'WaitingForResults', hand });
     return hand;
   }
 
   render() {
-    return(
+    return (
       <>
-      <AppView props={this.state} />
+        <button onClick={this.deploy.bind(this)}
+        >
+          Begin Deployment
+        </button>
+        <AppView {...this.state} deploy={this.deploy} />
       </>
     )
   }
@@ -114,8 +135,13 @@ class Transactor extends React.Component {
 
 // What's Displayed
 let AppView = props => {
-  return(
-    <div>Deez Nuts</div>
+  return (
+    <>
+      <h3>Chain Data:</h3>
+      <div>
+        <p>Chain State: {bigNumParse(props.state?.chainState)}</p>
+      </div>
+    </>
   );
 }
 
