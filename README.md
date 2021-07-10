@@ -1,5 +1,5 @@
 # reach-supplychain
-A simple supply chain made in reach for the Monash hackathon.
+A simple supply chain made in reach for the Monash hackathon. Built on reach hash c40c2f5c.
 
 ## Branches
 There are two branches in this project, main and compiler-issue-workaround.  
