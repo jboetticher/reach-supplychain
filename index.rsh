@@ -128,14 +128,16 @@ export const main = Reach.App(() => {
     commit();
 
     A.only(() => {
-      const bro = 4;
+      const nextTransaction = declassify(interact.createTransaction());
     });
-    A.publish(bro);
+    A.publish(nextTransaction);
+
+    // TODO: add to transitions & states based off of what was given in nextTransaction
 
     const newCS = {
-      transitionsLength: bro,
+      transitionsLength: cs.transitionsLength + 1,
       transitions: cs.transitions,
-      statesLength: bro,
+      statesLength: cs.statesLength + 1,
       states: cs.states
     };
     cs = newCS;
